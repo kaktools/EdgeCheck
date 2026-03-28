@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b1220" />
+  <title>Cloud Gateway Troubleshooter</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero card">
+      <div class="hero-copy">
+        <div class="eyebrow">Cloud Gateway Troubleshooting</div>
+        <h1>Interaktive Störungsdiagnose für X200, X300 und später X500</h1>
+        <p>
+          Wähle Gerät und Problem aus und arbeite die Checkliste Schritt für Schritt durch.
+          Die Oberfläche bleibt wie eine kleine App auf einer Seite, die Inhalte werden modular geladen.
+        </p>
+      </div>
+      <div class="hero-devices">
+        <div class="mini-card">Desktop</div>
+        <div class="mini-card">Tablet</div>
+        <div class="mini-card">Smartphone</div>
+      </div>
+    </header>
+
+    <section class="status-row card">
+      <div class="progress" aria-label="Fortschritt">
+        <div class="dot active"></div>
+        <div class="dot" id="progress-2"></div>
+        <div class="dot" id="progress-3"></div>
+      </div>
+      <div class="chips" id="selectionChips"></div>
+    </section>
+
+    <main class="layout">
+      <aside class="sidebar card">
+        <section>
+          <div class="section-head">
+            <div>
+              <div class="step-label">Schritt 1</div>
+              <h2>Gateway wählen</h2>
+            </div>
+          </div>
+          <div id="gatewayList" class="stack"></div>
+        </section>
+
+        <section class="divider-top">
+          <div class="section-head">
+            <div>
+              <div class="step-label">Schritt 2</div>
+              <h2>Problem wählen</h2>
+            </div>
+          </div>
+          <div id="problemList" class="stack"></div>
+        </section>
+
+        <section class="divider-top action-row">
+          <button id="resetBtn" class="btn secondary">Zurücksetzen</button>
+          <button id="backBtn" class="btn ghost">Gateway neu wählen</button>
+        </section>
+      </aside>
+
+      <section class="content card" id="contentArea">
+        <div class="placeholder">
+          <div class="step-label">Schritt 3</div>
+          <h2>Geführte Diagnose</h2>
+          <p>
+            Wähle links zuerst das Gateway und danach das Problem aus. Dann bekommst du eine saubere,
+            mobile-freundliche Checkliste zur Störungsdiagnose.
+          </p>
+          <div class="feature-grid">
+            <div class="feature-box">Modular pro Gerät aufgebaut</div>
+            <div class="feature-box">Leicht erweiterbar für neue Fehlerbilder</div>
+            <div class="feature-box">Checklisten-Ansicht für Techniker vor Ort</div>
+            <div class="feature-box">Bleibt wie eine App auf einer Seite</div>
+            <div class="feature-box">Desktop, Tablet und Smartphone optimiert</div>
+            <div class="feature-box">X500 schon als Platzhalter vorbereitet</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
