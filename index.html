@@ -3,49 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#111827" />
+  <meta name="theme-color" content="#0b263a" />
   <title>EdgeCheck</title>
   <link rel="icon" type="image/png" href="icon.png" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app" id="app">
-    <header class="topbar">
-      <div class="brand">
-        <img src="icon.png" alt="EdgeCheck Logo" class="brand-logo" />
-        <div>
-          <p class="kicker">Service-App</p>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand-row">
+        <img src="icon.png" alt="EdgeCheck" class="brand-logo" />
+        <div class="app-title">
           <h1>EdgeCheck</h1>
+          <p class="header-subtitle">Gateway Troubleshooting Console</p>
         </div>
       </div>
-      <button id="resetBtn" class="btn btn-secondary" type="button">Diagnosepfad neu starten</button>
+      <div class="header-actions">
+        <button id="backBtn" class="btn btn-secondary" type="button">Zurück</button>
+        <button id="resetBtn" class="btn btn-primary" type="button">Diagnose neu starten</button>
+      </div>
     </header>
 
-    <nav class="progress" aria-label="Diagnosefortschritt">
+    <nav class="progress-track" aria-label="Diagnosefortschritt">
       <span id="progressDevice" class="progress-step is-active">1 Gerät</span>
       <span id="progressProblem" class="progress-step">2 Problem</span>
       <span id="progressFlow" class="progress-step">3 Diagnose</span>
     </nav>
 
-    <main class="shell">
-      <aside class="picker">
-        <section class="panel">
-          <h2>Gateway</h2>
-          <div id="gatewayList" class="list"></div>
+    <main id="appGrid" class="app-grid">
+      <aside class="selection-column">
+        <section id="gatewayPanel" class="panel compact">
+          <h2>1 Gerät wählen</h2>
+          <p class="stage-hint">Wähle das Gateway für den Störungseinsatz.</p>
+          <div id="gatewayList" class="selection-list"></div>
         </section>
 
-        <section class="panel">
-          <h2>Problem</h2>
-          <div id="problemList" class="list"></div>
-        </section>
-
-        <section class="panel panel-actions">
-          <button id="backBtn" class="btn btn-ghost" type="button">Zurück zu Gateway</button>
-          <button id="clearChecksBtn" class="btn btn-ghost" type="button">Checkliste leeren</button>
+        <section id="problemPanel" class="panel compact">
+          <h2>2 Problem wählen</h2>
+          <p id="problemHint" class="stage-hint"></p>
+          <div id="problemList" class="selection-list"></div>
         </section>
       </aside>
 
-      <section class="workspace panel" id="contentArea" aria-live="polite"></section>
+      <section id="contentPanel" class="panel content-panel" aria-live="polite">
+        <div id="contentArea"></div>
+      </section>
     </main>
   </div>
 

@@ -1,36 +1,58 @@
 import { gateways, problems } from './data/gateways.js';
-import x200 from './data/x200.js';
-import x300 from './data/x300.js';
-import x500 from './data/x500.js';
 
-const runbooks = { x200, x300, x500 };
+const deviceModuleLoaders = {
+  x200: () => import('./data/x200.js'),
+  x300: () => import('./data/x300.js'),
+  x500: () => import('./data/x500.js'),
+};
+
+const moduleCache = {};
 
 const state = {
   gatewayId: null,
   problemId: null,
+  runbook: null,
   checks: new Set(),
+  loading: false,
+  error: '',
 };
+
+let loadVersion = 0;
 
 const gatewayList = document.getElementById('gatewayList');
 const problemList = document.getElementById('problemList');
 const contentArea = document.getElementById('contentArea');
+const appGrid = document.getElementById('appGrid');
+const gatewayPanel = document.getElementById('gatewayPanel');
+const problemPanel = document.getElementById('problemPanel');
+const contentPanel = document.getElementById('contentPanel');
+const problemHint = document.getElementById('problemHint');
 const progressDevice = document.getElementById('progressDevice');
 const progressProblem = document.getElementById('progressProblem');
 const progressFlow = document.getElementById('progressFlow');
 const resetBtn = document.getElementById('resetBtn');
 const backBtn = document.getElementById('backBtn');
-const clearChecksBtn = document.getElementById('clearChecksBtn');
 
-function makeElement(tag, className, text) {
-  const element = document.createElement(tag);
-  if (className) element.className = className;
-  if (typeof text === 'string') element.textContent = text;
-  return element;
+function makeElement(tag, className) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  return node;
 }
 
-function setProgress() {
+function resetRunbookState() {
+  state.runbook = null;
+  state.checks.clear();
+  state.loading = false;
+  state.error = '';
+}
+
+function updateProgress() {
   progressDevice.classList.add('is-active');
-  progressProblem.classList.toggle('is-active', Boolean(state.gatewayId));
+  progressDevice.classList.toggle('is-done', Boolean(state.gatewayId));
+
+  progressProblem.classList.toggle('is-active', Boolean(state.gatewayId && !state.problemId));
+  progressProblem.classList.toggle('is-done', Boolean(state.gatewayId && state.problemId));
+
   progressFlow.classList.toggle('is-active', Boolean(state.gatewayId && state.problemId));
 }
 
@@ -38,20 +60,23 @@ function renderGatewayList() {
   gatewayList.innerHTML = '';
 
   gateways.forEach((gateway) => {
-    const button = makeElement('button', `select-card${state.gatewayId === gateway.id ? ' is-selected' : ''}`);
+    const button = makeElement('button', `select-card gateway-card${gateway.id === state.gatewayId ? ' is-selected' : ''}`);
     button.type = 'button';
     button.innerHTML = `
       <div class="select-head">
-        <strong>${gateway.title}</strong>
-        <span>${gateway.state}</span>
+        <div class="device-headline">
+          <strong>${gateway.title}</strong>
+          <span>${gateway.subtitle}</span>
+        </div>
       </div>
-      <p>${gateway.description}</p>
+      <p class="device-description">${gateway.description}</p>
     `;
 
     button.addEventListener('click', () => {
+      if (state.gatewayId === gateway.id) return;
       state.gatewayId = gateway.id;
       state.problemId = null;
-      state.checks.clear();
+      resetRunbookState();
       renderApp();
     });
 
@@ -61,12 +86,19 @@ function renderGatewayList() {
 
 function renderProblemList() {
   problemList.innerHTML = '';
+  const selectedGateway = gateways.find((gateway) => gateway.id === state.gatewayId);
+
+  if (problemHint) {
+    problemHint.textContent = selectedGateway
+      ? `Ausgewähltes Gerät: ${selectedGateway.title}`
+      : 'Wähle zuerst ein Gerät.';
+  }
 
   problems.forEach((problem) => {
-    const isDisabled = !state.gatewayId;
-    const button = makeElement('button', `select-card${state.problemId === problem.id ? ' is-selected' : ''}`);
+    const disabled = !state.gatewayId;
+    const button = makeElement('button', `select-card${problem.id === state.problemId ? ' is-selected' : ''}`);
     button.type = 'button';
-    button.disabled = isDisabled;
+    button.disabled = disabled;
     button.innerHTML = `
       <div class="select-head">
         <strong>${problem.title}</strong>
@@ -74,78 +106,99 @@ function renderProblemList() {
       <p>${problem.description}</p>
     `;
 
-    button.addEventListener('click', () => {
+    button.addEventListener('click', async () => {
       if (!state.gatewayId) return;
       state.problemId = problem.id;
-      state.checks.clear();
+      resetRunbookState();
+      state.loading = true;
       renderApp();
+      await loadRunbookForSelection();
     });
 
     problemList.appendChild(button);
   });
 }
 
-function renderStartView() {
-  const selectedGateway = gateways.find((item) => item.id === state.gatewayId);
-
-  contentArea.innerHTML = `
-    <div class="empty-state">
-      <h2>Fehlerdiagnose starten</h2>
-      <p>1) Gateway wählen, 2) Problem wählen, 3) Schritte nacheinander abarbeiten.</p>
-      ${selectedGateway ? `<p><strong>Ausgewähltes Gerät:</strong> ${selectedGateway.title}</p>` : ''}
-    </div>
-  `;
-}
-
-function buildStepList(title, items, kind) {
-  if (!items || items.length === 0) return '';
+function buildStepSection(title, items, cssClass) {
+  if (!Array.isArray(items) || items.length === 0) return '';
 
   return `
     <div class="step-block">
       <h4>${title}</h4>
-      <ul class="${kind}">
-        ${items.map((entry) => `<li>${entry}</li>`).join('')}
+      <ul class="${cssClass}">
+        ${items.map((item) => `<li>${item}</li>`).join('')}
       </ul>
     </div>
   `;
 }
 
-function renderRunbook() {
-  const runbook = runbooks[state.gatewayId]?.[state.problemId];
-
-  if (!runbook) {
-    renderStartView();
+function renderWelcome() {
+  if (!state.gatewayId) {
+    contentArea.innerHTML = `
+      <section class="empty-state">
+        <h2>Gerät auswählen</h2>
+        <p>Wähle zuerst das Gateway links aus.</p>
+      </section>
+    `;
     return;
   }
 
-  const checklistIdPrefix = `${state.gatewayId}-${state.problemId}`;
-  const checkedCount = runbook.checklist.filter((_, index) => state.checks.has(`${checklistIdPrefix}-${index}`)).length;
+  if (!state.problemId) {
+    const gateway = gateways.find((entry) => entry.id === state.gatewayId);
+    contentArea.innerHTML = `
+      <section class="empty-state">
+        <h2>Problem auswählen</h2>
+        <p>Gerät: <strong>${gateway?.title || state.gatewayId.toUpperCase()}</strong></p>
+        <p>Wähle jetzt das konkrete Fehlerbild links aus.</p>
+      </section>
+    `;
+    return;
+  }
 
-  const stepsHtml = runbook.steps
-    .map(
-      (step, index) => `
+  contentArea.innerHTML = `
+    <section class="empty-state">
+      <h2>Keine Diagnose vorhanden</h2>
+      <p>Für dieses Fehlerbild ist noch kein Ablauf gepflegt.</p>
+    </section>
+  `;
+}
+
+function renderRunbook() {
+  if (!state.runbook) {
+    renderWelcome();
+    return;
+  }
+
+  const runbook = state.runbook;
+  const checklistPrefix = `${state.gatewayId}-${state.problemId}`;
+  const checkedCount = runbook.checklist.filter((_, index) => state.checks.has(`${checklistPrefix}-${index}`)).length;
+
+  const stepsMarkup = runbook.steps
+    .map((step, index) => {
+      return `
         <article class="step-card">
           <header>
             <span class="step-index">${index + 1}</span>
             <h3>${step.title}</h3>
           </header>
-          ${buildStepList('Information', step.info, 'list-info')}
-          ${buildStepList('Prüfschritt', step.check, 'list-check')}
-          ${buildStepList('Nächste Handlung', step.action, 'list-action')}
+          ${buildStepSection('Information', step.info, 'list-info')}
+          ${buildStepSection('Prüfschritt', step.check, 'list-check')}
+          ${buildStepSection('Nächste Handlung', step.action, 'list-action')}
           ${step.warning ? `<p class="alert">${step.warning}</p>` : ''}
           ${step.outcome ? `<p class="outcome">Ziel: ${step.outcome}</p>` : ''}
         </article>
-      `,
-    )
+      `;
+    })
     .join('');
 
-  const checklistHtml = runbook.checklist
+  const checklistMarkup = runbook.checklist
     .map((item, index) => {
-      const id = `${checklistIdPrefix}-${index}`;
+      const id = `${checklistPrefix}-${index}`;
       const checked = state.checks.has(id) ? 'checked' : '';
+      const doneClass = state.checks.has(id) ? ' is-done' : '';
       return `
-        <label class="check-item">
-          <input data-check-id="${id}" type="checkbox" ${checked} />
+        <label class="check-item${doneClass}">
+          <input type="checkbox" data-check-id="${id}" ${checked} />
           <span>${item}</span>
         </label>
       `;
@@ -154,68 +207,160 @@ function renderRunbook() {
 
   contentArea.innerHTML = `
     <section class="runbook-header">
-      <p class="kicker">${state.gatewayId.toUpperCase()} · ${runbook.problemLabel}</p>
+      <p class="eyebrow">${state.gatewayId.toUpperCase()} · ${runbook.problemLabel}</p>
       <h2>${runbook.title}</h2>
       <p>${runbook.objective}</p>
     </section>
 
     <div class="runbook-layout">
-      <section class="steps">${stepsHtml}</section>
+      <section class="steps">${stepsMarkup}</section>
       <aside class="checklist-panel">
         <div class="panel-sticky">
-          <h3>Checkliste</h3>
+          <div class="checklist-head">
+            <h3>Checkliste</h3>
+            <button id="clearChecksBtnInline" class="btn btn-ghost btn-inline" type="button">Leeren</button>
+          </div>
           <p>${checkedCount} / ${runbook.checklist.length} erledigt</p>
-          <div class="checklist">${checklistHtml}</div>
+          <div class="checklist">${checklistMarkup}</div>
         </div>
       </aside>
     </div>
   `;
 
-  contentArea.querySelectorAll('input[data-check-id]').forEach((input) => {
-    input.addEventListener('change', (event) => {
+  const clearChecksBtnInline = document.getElementById('clearChecksBtnInline');
+  if (clearChecksBtnInline) {
+    clearChecksBtnInline.addEventListener('click', () => {
+      state.checks.clear();
+      renderRunbook();
+    });
+  }
+
+  contentArea.querySelectorAll('input[data-check-id]').forEach((checkbox) => {
+    checkbox.addEventListener('change', (event) => {
       const checkId = event.target.getAttribute('data-check-id');
       if (!checkId) return;
+
       if (event.target.checked) state.checks.add(checkId);
       else state.checks.delete(checkId);
+
       renderRunbook();
     });
   });
 }
 
+function renderStatusCard() {
+  if (state.loading) {
+    contentArea.innerHTML = `
+      <section class="empty-state">
+        <h2>Diagnose wird geladen</h2>
+        <p>Ablaufdaten werden vorbereitet.</p>
+      </section>
+    `;
+    return true;
+  }
+
+  if (state.error) {
+    contentArea.innerHTML = `
+      <section class="empty-state">
+        <h2>Laden fehlgeschlagen</h2>
+        <p>${state.error}</p>
+      </section>
+    `;
+    return true;
+  }
+
+  return false;
+}
+
+function updateActionButtons() {
+  backBtn.disabled = !state.gatewayId;
+}
+
+function updateStepVisibility() {
+  const hasGateway = Boolean(state.gatewayId);
+  const hasProblem = Boolean(state.gatewayId && state.problemId);
+
+  gatewayPanel.classList.toggle('is-hidden', hasGateway);
+  problemPanel.classList.toggle('is-hidden', !hasGateway || hasProblem);
+  contentPanel.classList.toggle('is-hidden', !hasProblem);
+  appGrid.classList.toggle('is-runbook-stage', hasProblem);
+}
+
 function renderApp() {
   renderGatewayList();
   renderProblemList();
-  setProgress();
+  updateProgress();
+  updateStepVisibility();
+  updateActionButtons();
 
-  if (!state.gatewayId || !state.problemId) {
-    renderStartView();
+  if (renderStatusCard()) return;
+
+  if (state.gatewayId && state.problemId && state.runbook) {
+    renderRunbook();
     return;
   }
 
-  renderRunbook();
+  renderWelcome();
+}
+
+async function loadDeviceModule(gatewayId) {
+  if (moduleCache[gatewayId]) return moduleCache[gatewayId];
+
+  const loader = deviceModuleLoaders[gatewayId];
+  if (!loader) throw new Error('Kein Modul fuer dieses Geraet gefunden.');
+
+  const module = await loader();
+  moduleCache[gatewayId] = module.default;
+  return module.default;
+}
+
+async function loadRunbookForSelection() {
+  if (!state.gatewayId || !state.problemId) {
+    state.loading = false;
+    state.runbook = null;
+    renderApp();
+    return;
+  }
+
+  const currentVersion = ++loadVersion;
+
+  try {
+    const runbooksByProblem = await loadDeviceModule(state.gatewayId);
+    if (currentVersion !== loadVersion) return;
+
+    state.runbook = runbooksByProblem[state.problemId] || null;
+    state.error = '';
+  } catch (error) {
+    if (currentVersion !== loadVersion) return;
+    state.runbook = null;
+    state.error = error instanceof Error ? error.message : 'Unbekannter Ladefehler';
+  } finally {
+    if (currentVersion !== loadVersion) return;
+    state.loading = false;
+    renderApp();
+  }
 }
 
 resetBtn.addEventListener('click', () => {
   state.gatewayId = null;
   state.problemId = null;
-  state.checks.clear();
+  resetRunbookState();
   renderApp();
 });
 
 backBtn.addEventListener('click', () => {
-  state.gatewayId = null;
-  state.problemId = null;
-  state.checks.clear();
-  renderApp();
-});
-
-clearChecksBtn.addEventListener('click', () => {
-  state.checks.clear();
-  if (state.gatewayId && state.problemId) {
-    renderRunbook();
+  if (state.problemId) {
+    state.problemId = null;
+    resetRunbookState();
+    renderApp();
     return;
   }
-  renderApp();
+
+  if (state.gatewayId) {
+    state.gatewayId = null;
+    resetRunbookState();
+    renderApp();
+  }
 });
 
 renderApp();
