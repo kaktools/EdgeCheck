@@ -1,252 +1,192 @@
 export default {
   noInternet: {
-    title: "X200 – Kein Internet",
-    summary: "Prüfe zuerst Strom, Verkabelung, Link-Status und den lokalen Service-Zugang. Danach Router, Firewall und DNS eingrenzen.",
+    problemLabel: 'Kein Internet',
+    title: 'X200: Internetpfad prüfen',
+    objective: 'Physik, lokaler Zugriff und Netzparameter nacheinander prüfen, bis der Uplink eindeutig eingegrenzt ist.',
     steps: [
       {
-        title: "Vor-Ort-Sichtprüfung",
-        bullets: [
-          "Leuchtet das Gerät normal und ist es vollständig hochgefahren?",
-          "APPS-LED prüfen: für den lokalen Service-Zugang sollte sie grün sein.",
-          "LAN-Kabel fest eingesteckt? Testweise anderes Kabel oder anderen Switch-Port verwenden.",
-          "Link-LED am Port oder Switch prüfen."
-        ],
-        hint: "Ohne saubere physische Verbindung lohnt die tiefe Analyse meist noch nicht."
+        title: 'Basis am Gerät prüfen',
+        info: ['X200 muss vollständig hochgefahren sein.'],
+        check: ['APPS-LED ist grün.', 'Link-LED am LAN-Port/Switch ist aktiv.', 'Kabel und Port wurden bei Bedarf gegengeprüft.'],
+        action: ['Bei fehlendem Link zuerst Verkabelung/Switch korrigieren.'],
+        outcome: 'Stabile physische Verbindung vorhanden.',
       },
       {
-        title: "Lokalen Service-Zugang am X200 aktivieren",
-        bullets: [
-          "Notebook direkt an LAN-Port 1A oder 1B vom X200 anschließen.",
-          "SVC-Taste zweimal kurz drücken.",
-          "Danach bekommt der LAN-Port für 15 Minuten die Adresse 169.254.169.254.",
-          "Die SVC-LED leuchtet dabei rot."
-        ],
-        hint: "Nicht lange auf der SVC-Taste bleiben: langes Drücken kann einen Factory Reset auslösen."
+        title: 'Lokalen Servicezugang aktivieren',
+        info: ['PC direkt an LAN-Port 1A oder 1B anschließen.', 'Servicezieladresse ist https://169.254.169.254.'],
+        check: ['SVC-Taste zweimal kurz drücken.', 'SVC-LED leuchtet rot.', 'Servicezugang ist 15 Minuten aktiv.'],
+        action: ['Direkt nach Aktivierung Browser öffnen und einloggen.'],
+        warning: 'SVC-Taste nicht lange drücken: langes Drücken kann Factory Reset auslösen.',
+        outcome: 'Lokaler Zugriff ist aktiviert.',
       },
       {
-        title: "Weboberfläche lokal öffnen",
-        bullets: [
-          "Im Browser https://169.254.169.254 öffnen.",
-          "Falls eine HTTPS- oder Zertifikatswarnung erscheint, lokal bestätigen.",
-          "Wenn das Passwort nie geändert wurde: Benutzer admin / Passwort admin.",
-          "Beim ersten Login muss das Passwort geändert werden."
-        ],
-        hint: "Wenn die Oberfläche lokal erreichbar ist, liegt das Problem oft außerhalb des Geräts."
+        title: 'Weblogin durchführen',
+        info: ['Anmeldung mit Benutzer admin und Passwort admin nur, wenn noch nie geändert wurde.'],
+        check: ['HTTPS-Zertifikatswarnung im Browser bei Bedarf bestätigen.', 'Erstlogin erzwingt Passwortänderung.'],
+        action: ['Netzwerkstatus im Gerät auf Fehler prüfen (IP, Gateway, DNS, Zeit).'],
+        outcome: 'Statusbild im Gerät ist sichtbar.',
       },
       {
-        title: "Falls die Seite nicht aufgeht",
-        bullets: [
-          "Dem Notebook manuell eine Adresse wie 169.254.169.200 geben.",
-          "Subnetzmaske 255.255.255.0 setzen.",
-          "WLAN am Notebook deaktivieren, damit du sicher im richtigen Netz bist.",
-          "Danach erneut https://169.254.169.254 aufrufen."
-        ],
-        hint: "Wenn der lokale Service-Zugang klappt, kannst du danach Netzparameter und Internetpfad viel gezielter prüfen."
+        title: 'Kein Seitenaufbau im Browser',
+        info: ['Fallback bei lokalem Zugriff: feste PC-IP setzen.'],
+        check: ['PC-Adresse auf 169.254.169.200 setzen.', 'Subnetzmaske auf 255.255.255.0 setzen.', 'WLAN am Service-PC deaktivieren.'],
+        action: ['Erneut https://169.254.169.254 aufrufen.'],
+        outcome: 'Browserzugriff funktioniert oder Problem ist auf PC/Verkabelung eingegrenzt.',
       },
       {
-        title: "Netzwerkeinstellungen prüfen",
-        bullets: [
-          "IP-Konfiguration kontrollieren: statisch oder DHCP?",
-          "Standard-Gateway korrekt eingetragen?",
-          "DNS-Server plausibel?",
-          "Datum und Uhrzeit korrekt?"
-        ],
-        hint: "Falsches Gateway oder DNS ist sehr oft die Ursache bei 'kein Internet'."
+        title: 'Uplink im Kundennetz eingrenzen',
+        info: ['Wenn lokal erreichbar, liegt die Ursache oft im vorgelagerten Netz.'],
+        check: ['Default-Gateway erreichbar.', 'DNS-Auflösung funktioniert.', 'Firewall/Proxy/VLAN blockiert ausgehenden Verkehr nicht.'],
+        action: ['Bei Bedarf Referenznetz testen oder Kunden-IT einbinden.'],
+        outcome: 'Internetpfad ist freigegeben oder klar an Kundeninfrastruktur zugeordnet.',
       },
-      {
-        title: "Externe Erreichbarkeit eingrenzen",
-        bullets: [
-          "Router oder Firewall prüfen: darf das Gerät ins Internet?",
-          "Kundennetz auf Proxy, VLAN, MAC-Filter oder Port-Sperren prüfen.",
-          "Wenn möglich: Test mit bekannt funktionierendem Netzwerk oder Hotspot."
-        ],
-        hint: "Mit einem alternativen Netz lässt sich schnell unterscheiden: Gerät oder Kundennetz?"
-      }
     ],
     checklist: [
-      "Versorgung ok",
-      "APPS-LED geprüft",
-      "SVC-Taste korrekt ausgelöst",
-      "169.254.169.254 getestet",
-      "Laptop-IP ggf. manuell gesetzt",
-      "Gateway / DNS geprüft",
-      "Kundennetz eingegrenzt"
-    ]
+      'APPS-LED grün geprüft',
+      'PC an 1A/1B angeschlossen',
+      'SVC zweimal kurz gedrückt',
+      'SVC-LED rot bestätigt',
+      'https://169.254.169.254 getestet',
+      'Fallback-IP 169.254.169.200/24 geprüft',
+      'Login admin/admin geprüft',
+      'Gateway, DNS und Zeit geprüft',
+    ],
   },
   noCloud: {
-    title: "X200 – Keine Cloud-Verbindung",
-    summary: "Das Gerät wirkt lokal erreichbar, aber die Anbindung an die Cloud klappt nicht oder ist instabil.",
+    problemLabel: 'Keine Cloud-Verbindung',
+    title: 'X200: Cloud-Verbindung wiederherstellen',
+    objective: 'Sicherstellen, dass Internet, DNS, Zeit und Registrierung für den Cloud-Tunnel stimmen.',
     steps: [
       {
-        title: "Lokalen Zugriff bestätigen",
-        bullets: [
-          "Notebook an LAN-Port 1A oder 1B anschließen.",
-          "SVC-Taste zweimal kurz drücken.",
-          "Danach https://169.254.169.254 im Browser öffnen.",
-          "Prüfen, ob das Gerät normal läuft und keine lokalen Fehler meldet."
-        ],
-        hint: "Erst lokal bestätigen, dass das Gerät selbst grundsätzlich lebt."
+        title: 'Lokalen Zugang öffnen',
+        info: ['PC an 1A oder 1B anschließen.', 'Serviceadresse: https://169.254.169.254.'],
+        check: ['APPS-LED grün.', 'SVC zweimal kurz gedrückt.', 'SVC-LED rot, Zugriff 15 Minuten aktiv.'],
+        action: ['Im Browser anmelden und Diagnose starten.'],
+        warning: 'Langes Drücken der SVC-Taste kann Factory Reset auslösen.',
       },
       {
-        title: "Login und Grundcheck",
-        bullets: [
-          "HTTPS-Warnung lokal bestätigen, falls sie erscheint.",
-          "Bei Erstlogin ggf. admin / admin verwenden, sofern das Passwort nie geändert wurde.",
-          "Firmware- oder Systemstatus grob kontrollieren.",
-          "Screenshots von Status und Fehlermeldungen machen."
-        ],
-        hint: "Dokumentierte Screenshots helfen später enorm bei Support oder Kunden-IT."
+        title: 'Cloud-Basis prüfen',
+        info: ['Cloud benötigt korrekte Zeitbasis und DNS.'],
+        check: ['Gerät hat gültige IP-Konfiguration.', 'Gateway und DNS korrekt.', 'Zeit/Zeitsynchronisation plausibel.'],
+        action: ['Fehlende Parameter korrigieren und Verbindung neu testen.'],
       },
       {
-        title: "Internet am Gerät bestätigen",
-        bullets: [
-          "IP, Gateway und DNS prüfen.",
-          "Falls Diagnosefunktionen vorhanden sind: Internet- oder DNS-Auflösung testen.",
-          "Zeit oder Zeitsynchronisation prüfen."
-        ],
-        hint: "Für Cloud-Verbindungen sind korrekte Uhrzeit und DNS oft kritisch."
+        title: 'Cloudstatus dokumentieren',
+        info: ['Statuswerte werden für Eskalation benötigt.'],
+        check: ['Registrierung/Tenant-Zuordnung korrekt.', 'Fehlercode oder letzte Meldung notiert.'],
+        action: ['Bei weiterhin offline: Kundennetz-Firewall und Proxy-Regeln prüfen.'],
       },
-      {
-        title: "Cloud- oder Registrierungsstatus prüfen",
-        bullets: [
-          "In der Oberfläche nach Cloud-, Connectivity- oder Registration-Status suchen.",
-          "Geräte-ID, Tenant-Zuordnung oder Aktivierungsstatus prüfen.",
-          "Fehlermeldungen oder Statuscodes dokumentieren."
-        ],
-        hint: "Mach möglichst einen Screenshot, damit Support später schneller helfen kann."
-      },
-      {
-        title: "Kundennetz und Security eingrenzen",
-        bullets: [
-          "Firewall-Regeln, Proxy, SSL-Inspection oder restriktive DNS-Server prüfen.",
-          "Testweise anderes freigegebenes Netz verwenden, falls möglich.",
-          "Mit Kunden-IT abstimmen, ob ausgehende Verbindungen erlaubt sind."
-        ],
-        hint: "Cloud-Probleme sind oft kein Gerätefehler, sondern Netz- oder Security-Thema."
-      }
     ],
     checklist: [
-      "Lokal erreichbar",
-      "HTTPS-Zugriff getestet",
-      "Zeit / DNS geprüft",
-      "Cloud-Status dokumentiert",
-      "Kunden-IT / Firewall eingegrenzt"
-    ]
+      'Lokaler Zugriff aktiv',
+      'HTTPS-Warnung berücksichtigt',
+      'Zeit und DNS geprüft',
+      'Cloudstatus dokumentiert',
+      'Kunden-IT eingegrenzt',
+    ],
   },
-  localAccess: {
-    title: "X200 – Lokaler Zugriff auf die Weboberfläche",
-    summary: "Geführter Service-Zugang direkt vor Ort über den lokalen Siemens-Weg auf https://169.254.169.254.",
+  noLocalAccess: {
+    problemLabel: 'Kein lokaler Zugriff',
+    title: 'X200: Lokalen Servicezugang herstellen',
+    objective: 'Den lokalen Zugriff auf die Weboberfläche innerhalb weniger Minuten stabil herstellen.',
     steps: [
       {
-        title: "Direktverbindung vorbereiten",
-        bullets: [
-          "Notebook direkt an LAN-Port 1A oder 1B vom X200 anschließen.",
-          "WLAN am Notebook deaktivieren, damit du nicht versehentlich im falschen Netz bist.",
-          "Gateway muss laufen und die APPS-LED sollte grün sein."
-        ],
-        hint: "Am besten immer nur die Verbindung aktiv lassen, die du wirklich für die Diagnose nutzt."
+        title: 'Direktverbindung herstellen',
+        info: ['PC ausschließlich für Serviceverbindung nutzen.'],
+        check: ['PC an LAN-Port 1A oder 1B.', 'APPS-LED am X200 grün.'],
+        action: ['WLAN und weitere Netzwerkadapter am PC bei Bedarf deaktivieren.'],
       },
       {
-        title: "Service-Zugang aktivieren",
-        bullets: [
-          "SVC-Taste zweimal kurz drücken.",
-          "Der LAN-Port bekommt dann für 15 Minuten die Adresse 169.254.169.254.",
-          "Die SVC-LED leuchtet rot, solange der Service-Zugang aktiv ist."
-        ],
-        hint: "Langes Drücken vermeiden: das kann beim X200 einen Factory Reset auslösen."
+        title: 'Servicemodus aktivieren',
+        info: ['Lokale Weboberfläche: https://169.254.169.254.'],
+        check: ['SVC-Taste zweimal kurz drücken.', 'SVC-LED leuchtet rot.', 'Fenster von 15 Minuten aktiv.'],
+        action: ['Sofort Browser öffnen und Verbindung prüfen.'],
+        warning: 'Langes Drücken der SVC-Taste vermeiden (Factory-Reset-Risiko).',
       },
       {
-        title: "Browserzugriff testen",
-        bullets: [
-          "Im Browser https://169.254.169.254 öffnen.",
-          "Bei Zertifikatswarnungen prüfen, ob die Verbindung lokal bestätigt werden muss.",
-          "Wenn das Passwort nie geändert wurde: admin / admin.",
-          "Beim ersten Login muss das Passwort geändert werden."
-        ],
-        hint: "Manchmal blockiert nur eine HTTPS-Warnung den schnellen Zugriff."
+        title: 'Anmeldung und Fallback',
+        info: ['Standard-Login nur bei unverändertem Gerät: admin / admin.'],
+        check: ['HTTPS-Zertifikatswarnung bestätigt.', 'Bei Erstlogin Passwortänderung durchgeführt.'],
+        action: ['Falls keine Verbindung: PC-IP 169.254.169.200 / 255.255.255.0 setzen und erneut öffnen.'],
       },
       {
-        title: "Wenn nichts aufgeht",
-        bullets: [
-          "Dem Notebook manuell z. B. 169.254.169.200 geben.",
-          "Subnetzmaske 255.255.255.0 setzen.",
-          "Dann erneut https://169.254.169.254 aufrufen.",
-          "Alternatives Kabel oder anderen Port testen."
-        ],
-        hint: "Wenn dieser Weg nicht klappt, dann zusätzlich Verkabelung, Notebook-Netzprofil und Browser prüfen."
+        title: 'Optionaler Hostname-Zugriff',
+        info: ['Alternativ kann https://<hostname>.local funktionieren.'],
+        check: ['Lokale Namensauflösung im Netz verfügbar.'],
+        action: ['Wenn .local nicht auflöst, beim direkten Servicezugang über 169.254.169.254 bleiben.'],
       },
-      {
-        title: "Alternative im lokalen Netz",
-        bullets: [
-          "Wenn PC und Gateway im gleichen lokalen Netz hängen, kann auch https://<hostname>.local funktionieren.",
-          "Der Hostname ist typischerweise ConnectX200-Seriennummer.",
-          "Unter Windows klappt das über lokale Namensauflösung, teils mit Zusatzsoftware wie Bonjour."
-        ],
-        hint: "Der Service-Weg über 169.254.169.254 ist vor Ort meist der direkteste Zugang."
-      }
     ],
     checklist: [
-      "An 1A oder 1B angeschlossen",
-      "APPS-LED grün",
-      "SVC zweimal kurz gedrückt",
-      "169.254.169.254 geöffnet",
-      "Laptop-IP ggf. gesetzt",
-      "Login geprüft"
-    ]
+      'Direktverbindung 1A/1B aktiv',
+      'SVC-Routine korrekt ausgeführt',
+      'Browserzugriff über 169.254.169.254 getestet',
+      'Fallback-IP gesetzt',
+      'admin/admin und Passwortwechsel geprüft',
+      '.local optional getestet',
+    ],
   },
-  networkCheck: {
-    title: "X200 – Netzwerk prüfen",
-    summary: "Schnelle Grundprüfung für IP, DHCP, Router, Switch und Erreichbarkeit.",
+  webUiDown: {
+    problemLabel: 'Weboberfläche nicht erreichbar',
+    title: 'X200: Weboberfläche wieder erreichbar machen',
+    objective: 'Browserzugriff reproduzierbar herstellen und Sperrfaktoren am Service-PC beseitigen.',
     steps: [
       {
-        title: "Physik und Port",
-        bullets: [
-          "Kabel, Link-LED, Switch-Port und Patchfeld prüfen.",
-          "Wenn möglich: mit bekannt funktionierendem Port testen."
-        ]
+        title: 'Servicepfad neu auslösen',
+        info: ['Zieladresse bleibt https://169.254.169.254.'],
+        check: ['PC an 1A/1B.', 'APPS-LED grün.', 'SVC zweimal kurz und SVC-LED rot.'],
+        action: ['Browser in neuem privaten Fenster starten.'],
       },
       {
-        title: "Adressierung",
-        bullets: [
-          "Hat das Gerät eine gültige IP?",
-          "Passt die Subnetzmaske?",
-          "Ist das Standard-Gateway korrekt?",
-          "Wird DHCP erwartet oder statische Adressierung?"
-        ]
+        title: 'PC-Netzwerk fixieren',
+        info: ['Browserzugriff scheitert oft an falscher Adapterpriorität.'],
+        check: ['Manuelle IP 169.254.169.200 gesetzt.', 'Maske 255.255.255.0 gesetzt.', 'WLAN/zusätzliche VPN-Verbindungen deaktiviert.'],
+        action: ['Erneut auf 169.254.169.254 zugreifen.'],
       },
       {
-        title: "Erreichbarkeit",
-        bullets: [
-          "Ping lokal testen.",
-          "Gateway anpingen.",
-          "Andere Teilnehmer im Netz erreichbar?"
-        ]
-      }
+        title: 'HTTPS und Login sauber behandeln',
+        info: ['Lokaler Zertifikatshinweis ist erwartbar.'],
+        check: ['Zertifikatswarnung bestätigt.', 'Benutzer admin / Passwort admin nur falls unverändert.'],
+        action: ['Beim ersten Login Passwortwechsel durchführen.'],
+      },
+      {
+        title: 'Alternative Auflösung testen',
+        info: ['Optional: https://<hostname>.local bei funktionierender lokaler Namensauflösung.'],
+        check: ['Hostname im lokalen Netz bekannt.', 'mDNS/Bonjour im Clientnetz vorhanden.'],
+        action: ['Wenn kein Erfolg: bei direkter IP bleiben und Netzadapter-/Browserpolicy prüfen.'],
+      },
     ],
-    checklist: ["Kabel ok", "Link ok", "IP ok", "Subnetz ok", "Gateway ok"]
+    checklist: [
+      'Servicepfad erneut aktiviert',
+      'PC-IP 169.254.169.200/24 gesetzt',
+      'HTTPS-Hinweis bestätigt',
+      'Login geprüft',
+      'Hostname.local optional getestet',
+    ],
   },
   statusUnknown: {
-    title: "X200 – Geführte Erstprüfung",
-    summary: "Ideal, wenn du vor Ort erstmal nur strukturiert anfangen willst.",
+    problemLabel: 'Status unklar / Erstprüfung',
+    title: 'X200: Erstprüfung in 5 Minuten',
+    objective: 'Schnell einordnen, ob es ein Zugriffs-, Cloud- oder Uplink-Thema ist.',
     steps: [
       {
-        title: "1. Was sehe ich direkt am Gerät?",
-        bullets: ["Versorgung vorhanden?", "APPS-LED normal?", "Steckt LAN sauber?"]
+        title: 'Sichtprüfung',
+        info: ['Zuerst nur Symptome sichern.'],
+        check: ['Stromversorgung stabil.', 'APPS-LED grün.', 'Netzwerkkabel sitzt sauber.'],
+        action: ['Hauptsymptom auswählen und passenden Diagnosepfad öffnen.'],
       },
       {
-        title: "2. Was ist das eigentliche Symptom?",
-        bullets: ["Gar kein Internet?", "Nur Cloud gestört?", "Nur lokaler Zugriff gestört?"]
+        title: 'Lokaler Schnellzugriff',
+        info: ['Direktzugriff: https://169.254.169.254.'],
+        check: ['PC an 1A/1B.', 'SVC zweimal kurz.', 'SVC-LED rot und Zeitfenster aktiv.'],
+        action: ['Lokalen Status prüfen und Fehlerbild eingrenzen.'],
       },
       {
-        title: "3. Nächster sinnvoller Schritt",
-        bullets: [
-          "Für den lokalen Zugriff zuerst an 1A oder 1B anschließen.",
-          "SVC zweimal kurz drücken und 169.254.169.254 testen.",
-          "Dann Netzparameter prüfen.",
-          "Danach Cloud, IT oder Firewall eingrenzen."
-        ]
-      }
+        title: 'Nächsten Pfad festlegen',
+        info: ['Nach Eingrenzung direkt auf Internet-, Cloud- oder WebUI-Pfad wechseln.'],
+        check: ['Checkliste der Erstprüfung vollständig.'],
+        action: ['Diagnosepfad ohne Neustart fortsetzen.'],
+      },
     ],
-    checklist: ["Gerät lebt", "LAN steckt", "Symptom eingegrenzt", "Lokaler Zugriff geplant"]
-  }
+    checklist: ['Gerätestatus erfasst', 'Lokalzugriff vorbereitet', 'Fehlerbild klar zugeordnet'],
+  },
 };
